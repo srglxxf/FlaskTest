@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        {{ moment.include_jquery() }}
+        {{ moment.include_moment() }}
+    {{ moment.lang("zh-CN") }}
+</head>
+<body>
+<p>现在时间时: {{ moment().format('YYYY年M月D日, h:mm:ss a') }}.</p>
+<p>已经过去了: {{ moment().fromTime(time) }}.</p>
+<p>{{ moment().calendar() }}.</p>
+</body>
+</html>
