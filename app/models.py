@@ -1,9 +1,10 @@
 from datetime import datetime
+import hashlib
 
 from flask_sqlalchemy import SQLAlchemy
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import current_app
+from flask import current_app, request
 from flask_login import UserMixin, AnonymousUserMixin
 from . import login_manager
 
@@ -70,7 +71,7 @@ class User(UserMixin, db.Model):
 
     def can(self, permissions):
         # type: (object) -> object
-        return self.role_id is not None and (self.role_id.permissions & permissions) == permissions
+        return self.role is not None and (self.role.permissions & permissions) == permissions
 
     def is_administrator(self):
         return self.can(Permission.ADMINISTER)
@@ -78,6 +79,15 @@ class User(UserMixin, db.Model):
     def ping(self):
         self.last_seen = datetime.utcnow()
         db.session.add(self)
+
+    def gravatar(self, size=100, default='identicon', rating='g'):
+        if request.is_secure:
+            url = 'https://secure.gravatar.com/avatar'
+        else:
+            url = 'http://www.gravatar.com/avatar'
+        hash = hashlib.md5(self.email.encode('utf-8')).hexdigest()
+        return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
+            url=url, hash=hash, size=size, default=default, rating=rating)
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -105,5 +115,3 @@ class Permission():
     WRITE_ARTICLES = 0x04
     MODERATE_COMMENTS = 0x08
     ADMINISTER = 0x80
-
-
