@@ -5,30 +5,20 @@ from flask_login import login_required, current_user
 
 from app.decorators import admin_required
 from . import main
-from .forms import NameForm, EditProfileForm, EditProfileAdminForm
+from .forms import NameForm, EditProfileForm, EditProfileAdminForm, PostForm
 from .. import db
-from ..models import User
+from ..models import User, Permission, Post
 
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
-    form = NameForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.name.data).first()
-        if user is None:
-            user = User(username=form.name.data)
-            db.session.add(user)
-            session['known'] = False
-        else:
-            session['known'] = True
-        session['name'] = form.name.data
-        form.name.data = ''
+    form = PostForm()
+    if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit():
+        post = Post(body=form.body.data, author=current_user._get_current_object())
+        db.session.add(post)
         return redirect(url_for('.index'))
-    return render_template('index.html',
-                           form=form,
-                           name=session.get('name'),
-                           known=session.get('known', False),
-                           current_time=datetime.utcnow())
+    posts = Post.query.order_by(Post.timestamp.desc()).all()
+    return render_template('index.html', form=form, posts=posts)
 
 
 @main.route('/secret')
@@ -93,3 +83,4 @@ def edit_profile_admin(id):
 def user_list():
     users = [instance for instance in db.session.query(User).order_by(User.id)]
     return render_template('user_list.html', users=users)
+

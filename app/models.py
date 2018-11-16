@@ -2,7 +2,7 @@ from datetime import datetime
 import hashlib
 
 from flask_sqlalchemy import SQLAlchemy
-from . import db
+from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import current_app, request
 from flask_login import UserMixin, AnonymousUserMixin
@@ -49,6 +49,8 @@ class User(UserMixin, db.Model):
     about_me = db.Column(db.Text())
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
+
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -102,6 +104,15 @@ class AnonymousUser(AnonymousUserMixin):
 
 
 login_manager.anonymous_user = AnonymousUser
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow())
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+
 
 
 @login_manager.user_loader
